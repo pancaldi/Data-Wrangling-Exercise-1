@@ -1,28 +1,25 @@
-# load data and packages
+# create path to the file and load packages
 
-library(readxl)
-dfOriginal <- read_excel('C/Users/jaqo_000/GoogleDrive/refine_original.csv.xls')
-destfile <- "refine.xls"
-View(copy_of_refine_original_csv)
-library("tidyverse")
+library(readr)
+refine_original_csv <- read_excel("C:/Users/jaqo_000/Desktop/refine_original.csv.xlsx")
+View(refine_original_csv)
+library(dplyr)
+library(tidyverse)
 
+# clean up company brand names
 
+clean_companies <- refine_original_csv %>%
+  mutate(company, company = tolower(company)) %>%
+  mutate(company = case_when(company %in% c("phillipS", "fillips", "phlips", "phillps", "phllips") ~ "philips", TRUE ~ company)) %>%
+  mutate(company = case_when(company %in% c("akz0", "ak zo", "AKZO", "Akzo") ~ "akzo", TRUE ~ company)) %>%
+  mutate(company = case_when(company %in% c("Van Houten", "van houten") ~ "van Houten", TRUE ~ company)) %>%
+  mutate(company = case_when(company %in% c("unilver", "Unilever") ~ "unilever", TRUE ~ company)) %>%
+  
+          
+# separate product code and product number         
 
-# clean up brand names
-
-clean_col <- destfile %>%
-  mutate(company = tolower(company) %>% 
-         first_letter = substr(lower_company, 0, 1),
-         clean_company = ifelse(first_letter == "p", "philips",
-                                ifelse(first_letter == "a", "akzo",
-                                       ifelse(first_letter == "v", "van Houten",
-                                              ifelse(first_letter == "u", "unilever", first_letter))))) 
-         
-
-# separate product code and number
-
-separate_product <- company %>%
-  separate('product code/number', c("product_code", "product_number"), sep = "_", remove = TRUE)
+separate_product <- refine_original_csv %>% 
+  separate('Product code/ number', c("product_code", "product_number"), sep = "_", remove = TRUE)
 
 
 # add product categories
@@ -31,22 +28,22 @@ product_code <- c("p", "v", "x", "q")
 product_category <- c("Smartphone", "TV", "Laptop", "Tablet")
 ProCatLookup <- data.frame(product_code, product_category)
 
-# full address for geocoding
+# set up full address for geocoding
 
-full_address <- product_category %>%
-  unite(fulladdress, address:country, sep = "_", remove = TRUE)
+full_address <- refine_original_csv %>% 
+  unite('fulladdress', c(address, city, country), sep = ", ", remove = TRUE)
 
 # create dummy variables for company & product category
 
-dummy_variables <- full_address %>%
+dummy_variables <- refine_original_csv %>%
   mutate(company_binary = 1, product_binary = 1) %>%
   mutate(company = paste0("company_", company), category = paste0("product_", category)) %>%
   spread(company, company_binary, fill = 0) %>%
-  spread(category, product_binary, fill = 0)
+  spread(category, product_binary, fill = 0) 
  
 # save the output as a CSV file & submit to github
 
-write.csv(dummy_variables, destfile = "refine_clean.csv") 
+write.csv(refine_original_csv, file = "refine_clean.csv") 
 
  
 
